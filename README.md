@@ -61,33 +61,14 @@ That installs the root helper, the API, and the client.
 
 ## Environment configuration
 
-Copy the examples and fill in real values:
+Copy the example files and fill in your own values locally. Do not commit `server/.env` or put real secrets in this README.
 
 ```bash
 copy server\.env.example server\.env
 copy client\.env.example client\.env.development
 ```
 
-`server/.env`:
-
-```text
-PORT=5000
-NODE_ENV=development
-MONGODB_URI=mongodb://127.0.0.1:27017/smart-ems
-JWT_SECRET=change-this-to-a-long-random-string
-JWT_EXPIRES_IN=8h
-CLIENT_URL=http://localhost:5173
-APP_TIMEZONE=Asia/Kolkata
-BCRYPT_ROUNDS=12
-```
-
-`client/.env.development`:
-
-```text
-VITE_API_URL=http://localhost:5000/api
-```
-
-The API URL is read from `VITE_API_URL`. Production builds should set that variable to the deployed API origin before `npm run build`. A development `.env` is already ignored by git when named `.env`. The checked-in development file points at the local API and contains no secrets.
+The server example lists the required settings, including the database connection, JWT secret, client origin, and timezone. The client example sets the API base URL. Production builds should point that URL at the deployed API before `npm run build`. Files named `.env` are ignored by git.
 
 ## MongoDB setup
 
@@ -95,20 +76,20 @@ The API URL is read from `VITE_API_URL`. Production builds should set that varia
 
 1. Install [MongoDB Community Server](https://www.mongodb.com/try/download/community).
 2. Start the database service.
-3. Use `mongodb://127.0.0.1:27017/smart-ems` as `MONGODB_URI`.
+3. Set the database connection in `server/.env` to your local MongoDB instance and database name.
 
 **MongoDB Atlas**
 
 1. Create a free cluster and a database user.
 2. Allow your IP address under Network Access.
-3. Copy the connection string into `MONGODB_URI` in `server/.env`.
-4. Replace `<password>` and set the database name, for example `smart-ems`.
+3. Paste the Atlas connection string into `server/.env`.
+4. Replace the password placeholder and choose a database name. Keep that file off git.
 
 Transactions are used for employee creation and leave approval. Atlas and replica sets support them. A standalone local MongoDB falls back to a non-transactional write so the same code still runs.
 
 ## Seed data
 
-Seeding is manual. It refuses to run when `NODE_ENV=production`.
+Seeding is manual. It refuses to run in production.
 
 ```bash
 npm run seed
@@ -204,7 +185,7 @@ Successful responses use `{ success, message, data }`. Lists also include `pagin
 
 ## Business rules
 
-- Office start is 09:30 in `APP_TIMEZONE`. A check-in after that is late. Fewer than 4 worked hours is a half day.
+- Office start is 09:30 in the timezone configured on the server. A check-in after that is late. Fewer than 4 worked hours is a half day.
 - Attendance timestamps come from the server. A second check-in or check-out on the same day is rejected.
 - Approved leave deducts the balance once. Rejected, pending, and cancelled requests do not.
 - A department cannot be deleted while employees are still assigned to it.
@@ -212,20 +193,20 @@ Successful responses use `{ success, message, data }`. Lists also include `pagin
 
 ## Deployment
 
-1. Set `NODE_ENV=production`, a long random `JWT_SECRET`, the Atlas `MONGODB_URI`, and `CLIENT_URL` to the deployed frontend origin.
+1. In the server environment file, set production mode, a long random JWT secret, the Atlas connection string, and the deployed frontend origin.
 2. Start the API with `npm start --prefix server`.
-3. Build the client with `VITE_API_URL` set to the public API, for example `https://api.example.com/api`.
+3. Build the client with the public API URL configured in the client environment.
 4. Serve `client/dist` from any static host.
 5. Confirm `GET /api/health` reports `db: connected`.
 
-Do not run the seed script in production. It is blocked when `NODE_ENV=production`.
+Do not run the seed script in production. It is blocked in production mode.
 
 This repository does not deploy itself. The steps above are the configuration required to deploy it.
 
 ## Troubleshooting
 
-- **Environment validation failed:** `JWT_SECRET` must be at least 16 characters and `MONGODB_URI` must be set.
+- **Environment validation failed:** the JWT secret must be at least 16 characters and the database connection must be set in `server/.env`.
 - **API cannot connect:** confirm MongoDB is running, or that the Atlas user, password, and IP allow list are correct.
-- **Browser requests fail:** `CLIENT_URL` must match the frontend origin, including the port.
+- **Browser requests fail:** the allowed client origin in `server/.env` must match the frontend origin, including the port.
 - **Login says the account is deactivated:** an admin deactivated that employee. Edit the employee and set the status back to active.
 - **End-to-end tests cannot start:** free ports 5000 and 5173, then install Chromium with the Playwright command above. The first run downloads a MongoDB binary for the isolated test database.
