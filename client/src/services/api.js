@@ -1,6 +1,14 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL || '/api';
+export function resolveApiBase(value) {
+  const raw = String(value || '').trim().replace(/\/+$/, '');
+  if (!raw) return '/api';
+  const withoutHealth = raw.endsWith('/api/health') ? raw.slice(0, -'/health'.length) : raw;
+  if (withoutHealth.endsWith('/api')) return withoutHealth;
+  return `${withoutHealth}/api`;
+}
+
+const baseURL = resolveApiBase(import.meta.env.VITE_API_URL);
 
 export const api = axios.create({ baseURL });
 
